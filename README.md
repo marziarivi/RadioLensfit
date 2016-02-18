@@ -1,11 +1,8 @@
 # RadioLensfit 
 
-Authors: Marzia Rivi (UCL), Lance Miller (University of Oxford)
-
 Visibilities simulation and Bayesian shape model fitting of radio galaxies.
 
 This is a MPI+OpenMP code for simulating visibilities of one observed galaxy by using SKA1-MID configuration, and measuring the galaxy shape in the visibility domain adopting  a Bayesian model fitting approach. It uses an exponential Sersic model and works in the visibility domain avoiding Fourier Transform.
-See paper: M. Rivi, L. Miller, S. Makhathini, F. Abdalla, in prep.
 
 version 1.0 - galaxies at the phase centre, uniform gridding
 
@@ -14,12 +11,14 @@ version 1.0 - galaxies at the phase centre, uniform gridding
 GSL library is required.
 
 1) Edit the Makefile:
-- set the compiler and compilation flags you want to use (default GNU)
-- enable/disable MPI and openMP
+- enable/disable MPI and openMP (default: serial)
+- enable/disable gridding (default: gridding enabled)
+- set the compiler and compilation flags you want to use (default: GNU)
 
 2) Make.
 
 ## Usage
+The radio telescope configuration is set at the beginning of the main() function for SKA1-MID with 12 frequency channels and 60s accumulation time.
 
 <code> RadioLensfit.x \<filename u-coord\> \<filename v-coord\> \<nge\> \<shear1\> \<shear2\> \<flux-cut\> </code>
 
@@ -39,7 +38,3 @@ The code produces a file, called "ellipticities\<n\>.txt", for each MPI task (n=
 - 1D likelihood variance
 - SNR
 
-
-To compute the cosmic shear use the python script to process the ellipticities files: 
-
-<code> shear.py -nf \<number of files\> </code>
