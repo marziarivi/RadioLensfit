@@ -1,0 +1,47 @@
+/*
+ * Copyright (c) 2015 Marzia Rivi
+ *
+ * This file is part of RadioLensfit.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
+ 
+
+#ifndef _GalaxyVisibilities_h
+#define _GalaxyVisibilities_h
+
+#include <gsl/gsl_rng.h>
+#include "datatype.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+
+void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers,
+                                          double e1, double e2, double scalelength, double flux,
+                                          unsigned long int num_coords, double* uu_metres, double* vv_metres,
+                                          unsigned long int* count, double* Modvis);
+    
+void data_galaxy_visibilities(double spectra, double wavenumber, double e1, double e2,
+                                    double scalelength, double flux, unsigned long int num_coords,
+                                    double* uu_metres, double* vv_metres, complexd* vis);
+    
+void add_system_noise(gsl_rng * gen, unsigned int num_baselines, unsigned int num_times, complexd* vis, double* sigma);
+    
+#ifdef __cplusplus
+}
+#endif
+
+#endif
