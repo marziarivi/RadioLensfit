@@ -18,9 +18,9 @@ OPTIMIZE = -O3 -g
 
 ifeq (MPI,$(findstring MPI,$(OPT)))
   CC  =  mpiCC -g 
- else
-  CC  = g++-4.9
- endif
+else
+  CC  = g++
+endif
 
 OPTIONS = $(OPTIMIZE) $(OPT)
 EXEC = RadioLensfit.x   
