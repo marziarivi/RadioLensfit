@@ -30,7 +30,7 @@ extern "C" {
     
 
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers,
-                                          double e1, double e2, double scalelength, double flux,
+                                          double e1, double e2, double scalelength, 
                                           unsigned long int num_coords, double* uu_metres, double* vv_metres,
                                           unsigned long int* count, double* Modvis);
     
