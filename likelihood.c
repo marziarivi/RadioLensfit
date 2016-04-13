@@ -149,7 +149,7 @@ double loglikelihood_r(unsigned int nchannels, double* spec, double* wavenumbers
                            double* uu_metres, double* vv_metres, complexd* visData, double* visM)
 {
     // generate model
-    model_galaxy_visibilities(nchannels, spec, wavenumbers, ee1, ee2, scale, 100., n_uv_coords, uu_metres, vv_metres, count, visM);
+    model_galaxy_visibilities(nchannels, spec, wavenumbers, ee1, ee2, scale, n_uv_coords, uu_metres, vv_metres, count, visM);
         
     // Compute log(likelihood) dependend only on ellipticity and scale-length
     double L_er,ho, det_sigma;
