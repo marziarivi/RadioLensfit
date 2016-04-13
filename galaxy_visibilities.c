@@ -36,7 +36,7 @@ extern "C" {
     
 // Compute model galaxy visibilities analitically (imaginary part is equal to 0!)
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double e1, double e2,
-                               double scalelength, double flux, unsigned long int num_coords,
+                               double scalelength, unsigned long int num_coords,
                                double* uu_metres, double* vv_metres, unsigned long int* count, double* Modvis)
 {
    // double u,v;
@@ -62,7 +62,7 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
           k2 = e2*uu + (1.-e1)*vv;
         
           den = 1. + scale_factor*wavenumber*wavenumber*(k1*k1+k2*k2);
-          Modvis[nv] = spectra*flux/(den*sqrt(den));
+          Modvis[nv] = spectra/(den*sqrt(den));
  
 #ifdef GRID
           sum += (Modvis[nv]*Modvis[nv])*count[i];
