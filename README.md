@@ -25,6 +25,7 @@ The radio telescope configuration is set at the beginning of the main() function
 
 - nge*10 galaxies will be simulated with flux larger than \<flux-cut\> [in muJy]
 - g=(shear1,shear2) is the shear to apply to the ellipticity of each galaxy
+- Coordinate files are assumed to be txt containing one coordinate per line.
 
 The code produces a file, called "ellipticities\<n\>.txt", for each MPI task (n=0,1,...N) where each row contains the following galaxy data:
 >
