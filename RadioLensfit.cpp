@@ -437,7 +437,7 @@ int main(int argc, char *argv[])
              }
 #ifdef GRID
              // Phase shift data visibilities (to be done after gridding because real data will be gridded)
-             data_visibilities_phase_shift(wavenumbers[ch], l0, m0, num_coords, uu_metres, vv_metres, &(visData[ch_vis]));
+             data_visibilities_phase_shift(wavenumbers[ch], -l0, -m0, num_coords, uu_metres, vv_metres, &(visData[ch_vis]));
               
              // gridding visibilities ----------------------------------------------------------------------------------------------------------------
              unsigned int ch_visgrid = ch*grid_ncoords;
