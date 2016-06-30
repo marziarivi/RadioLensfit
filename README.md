@@ -4,6 +4,7 @@ Visibilities simulation and shape model fitting of radio galaxies.
 
 This is a MPI+OpenMP code for simulating visibilities of one observed galaxy by using SKA1-MID configuration, and measuring the galaxy shape in the visibility domain adopting  a Bayesian model fitting approach. It uses an exponential Sersic model and works in the visibility domain avoiding Fourier Transform.
 
+version 1.0 - single galaxy at the phase centre 
 version 1.1 - single galaxy in the field of view, normal gridding
 
 ## Installation
