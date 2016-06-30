@@ -1,6 +1,6 @@
 # RadioLensfit 
 
-Visibilities simulation and Bayesian shape model fitting of radio galaxies.
+Visibilities simulation and shape model fitting of radio galaxies.
 
 This is a MPI+OpenMP code for simulating visibilities of one observed galaxy by using SKA1-MID configuration, and measuring the galaxy shape in the visibility domain adopting  a Bayesian model fitting approach. It uses an exponential Sersic model and works in the visibility domain avoiding Fourier Transform.
 
