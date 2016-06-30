@@ -32,13 +32,14 @@ double f_posterior (const gsl_vector *v, void *params);
 double f_likelihood (const gsl_vector *v, void *params);
 double loglikelihood(void *params, double ee1, double ee2, int *error);
     
-double loglikelihood_r(unsigned int nchannels, double* spec, double* wavenumbers, double ee1, double ee2,
-                    double scale, unsigned long int n_uv_coords, unsigned long int* count, const double variance,
-                       double* uu_metres, double* vv_metres, complexd* visData, double* visM);
+double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
+                       double* wavenumbers, double ee1, double ee2, double l, double m, double scale,
+                       unsigned long int n_uv_coords, unsigned long int* count, const double variance,
+                       double* uu_metres, double* vv_metres, complexd* visData, complexd* visM);
     
 void cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
                        unsigned long int* count, double* uu_metres, double* vv_metres, complexd* visData,
-                       double* visMod, double* ho, double* det_sigma);
+                       complexd* visMod, double* ho, double* det_sigma);
 
 double marginalise_over_position_shift(double x);
     

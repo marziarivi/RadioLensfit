@@ -58,7 +58,7 @@ double f_posterior (const gsl_vector *v, void *params)
     
         if(e_mod <= 0.8 && e_mod > 0.)
         {
-            double L_r = loglikelihood_r(par->nchannels, par->spec, par->wavenumbers, ee1, ee2, scale, par->ncoords, par->count,par->sigma,par->uu,par->vv,par->data,par->mod);
+            double L_r = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, scale, par->ncoords, par->count,par->sigma,par->uu,par->vv,par->data,par->mod);
             log_post = L_r+log(e_pdf(e_mod));
         }
         else log_post = -1.e10;
@@ -120,7 +120,7 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
     for (int nRo = 1; nRo < numR; nRo++)
     {
        unsigned long int index = (nRo-1)*(par->ncoords)*(par->nchannels);
-       L_r[nRo] = loglikelihood_r(par->nchannels, par->spec, par->wavenumbers, ee1, ee2, (par->ro)[nRo], par->ncoords, par->count, par->sigma, par->uu, par->vv, par->data, &((par->mod)[index]));
+       L_r[nRo] = loglikelihood_r(par->nchannels, par->band_factor, par->acc_time, par->spec, par->wavenumbers, ee1, ee2, par->l0, par->m0, (par->ro)[nRo], par->ncoords, par->count, par->sigma, par->uu, par->vv, par->data, &((par->mod)[index]));
     }
     
     // marginalisation over scalelength
@@ -131,6 +131,7 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
         printf("likelihood error for e1 = %f, e2 = %f: too few points (n=%d) for marginalisation over the scalelength\n",ee1,ee2,numvals);
         *error = 1; L_e = -1.e10;
     }
+    if (L_e == -1.e10) *error = 1;
     
     free(L_r);
     free(xmarvals);
@@ -144,12 +145,15 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
  *  Likelihood computation as function of ellipticity and scalelength (marginalise over position)
  */
     
-double loglikelihood_r(unsigned int nchannels, double* spec, double* wavenumbers, double ee1, double ee2,
-                           double scale, unsigned long int n_uv_coords, unsigned long int* count, const double variance,
-                           double* uu_metres, double* vv_metres, complexd* visData, double* visM)
+double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
+                       double* wavenumbers, double ee1, double ee2, double l, double m, double scale,
+                       unsigned long int n_uv_coords, unsigned long int* count, const double variance,
+                       double* uu_metres, double* vv_metres, complexd* visData, complexd* visM)
 {
     // generate model
-    model_galaxy_visibilities(nchannels, spec, wavenumbers, ee1, ee2, scale, 100., n_uv_coords, uu_metres, vv_metres, count, visM);
+    //model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, n_uv_coords, uu_metres, vv_metres, count, visM);
+    // generate model at the phase centre
+    model_galaxy_visibilities_at_zero(nchannels, spec, wavenumbers, ee1, ee2, scale, n_uv_coords, uu_metres, vv_metres, count, visM);
         
     // Compute log(likelihood) dependend only on ellipticity and scale-length
     double L_er,ho, det_sigma;
@@ -171,9 +175,9 @@ double loglikelihood_r(unsigned int nchannels, double* spec, double* wavenumbers
  *  the cross-correlation is approximated as a 2D gaussian
  *  centered in its maximum ho = h(xo,yo) and det(covariance matrix) = 1/det(Hessian(xo,yo)).
  */
-void cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords, unsigned long int* count,
-                       double* uu_metres, double* vv_metres, complexd* visData, double* visMod, double* ho,
-                       double* det_sigma)
+void cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
+                       unsigned long int* count, double* uu_metres, double* vv_metres, complexd* visData,
+                       complexd* visMod, double* ho, double* det_sigma)
 {
     double a, real_part, imag_part, res_arc, wavenumber, u,v;
     double det, d2h_dx2_xo, d2h_dy2_yo, dh_dx_xo, dh_dy_yo, d2h_dxdy_o;
@@ -188,12 +192,11 @@ void cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned lon
         wavenumber = wavenumbers[ch];
         for (i=0; i < n_uv_coords; i++)
         {
+            h_F[k].real = (visData[k].real*visMod[k].real + visData[k].imag*visMod[k].imag);
+            h_F[k].imag = (visData[k].real*visMod[k].imag - visData[k].imag*visMod[k].real);
 #ifdef GRID
-            h_F[k].real = (visData[k].real*visMod[k])*count[i];
-            h_F[k].imag = (- visData[k].imag*visMod[k])*count[i];
-#else
-            h_F[k].real = (visData[k].real*visMod[k]);
-            h_F[k].imag = (- visData[k].imag*visMod[k]);
+            h_F[k].real *= count[i];
+            h_F[k].imag *= count[i];
 #endif
             value += h_F[k].real;
             
@@ -245,22 +248,22 @@ void cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned lon
           double wavenumber = wavenumbers[ch];
           for (i = 0; i < n_uv_coords; ++i)
           {
-            u = uu_metres[i];
-            v = vv_metres[i];
-            a = wavenumber * (xo*u + yo*v);
+             u = uu_metres[i];
+             v = vv_metres[i];
+             a = wavenumber * (xo*u + yo*v);
         
-            // complex multiply, take only the real part
-            k = ch*n_uv_coords + i;
-            real_part = (h_F[k].real * cos(a) - h_F[k].imag * sin(a));
-            imag_part = (h_F[k].real * sin(a) + h_F[k].imag * cos(a));
-            value += real_part;
+             // complex multiply, take only the real part
+             k = ch*n_uv_coords + i;
+             real_part = (h_F[k].real * cos(a) - h_F[k].imag * sin(a));
+             imag_part = (h_F[k].real * sin(a) + h_F[k].imag * cos(a));
+             value += real_part;
         
-            dh_dx_xo -= imag_part * wavenumber * u;
-            dh_dy_yo -= imag_part * wavenumber * v;
+             dh_dx_xo -= imag_part * wavenumber * u;
+             dh_dy_yo -= imag_part * wavenumber * v;
         
-            d2h_dx2_xo += real_part * wavenumber*wavenumber * u*u;
-            d2h_dy2_yo += real_part * wavenumber*wavenumber * v*v;
-            d2h_dxdy_o += real_part * wavenumber*wavenumber * u*v;
+             d2h_dx2_xo += real_part * wavenumber*wavenumber * u*u;
+             d2h_dy2_yo += real_part * wavenumber*wavenumber * v*v;
+             d2h_dxdy_o += real_part * wavenumber*wavenumber * u*v;
           }
         }
         det  = d2h_dx2_xo*d2h_dy2_yo - d2h_dxdy_o*d2h_dxdy_o;
@@ -397,7 +400,7 @@ int likelihood_sampling(int rank, double *mes_e1, double *mes_e2, double maxL, v
         mod2 = x_e2*x_e2+max_e1*max_e1;
         if(mod2 <= 1.)
         {
-            L_e = loglikelihood(par,max_e1, x_e2, &error);
+            L_e = loglikelihood(par, max_e1, x_e2, &error);
             if (!error)
             {
                 
@@ -409,7 +412,7 @@ int likelihood_sampling(int rank, double *mes_e1, double *mes_e2, double maxL, v
       }
    
     float edim1 = k1*sampling;
-    float edim2 = k2*sampling; //edim1;
+    float edim2 = k2*sampling;
     float start1 = edim1;
     float start2 = edim2;
     

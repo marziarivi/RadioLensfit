@@ -51,14 +51,18 @@ typedef struct{
     double *rprior;
     unsigned int ncoords;
     unsigned int nchannels;
+    double band_factor;
+    double acc_time;
     double* spec;
     double* wavenumbers;
     unsigned long int* count;
     double sigma;
     double* uu;
     double* vv;
+    double l0;
+    double m0;
     complexd* data;
-    double* mod;    // model visibilities are real 
+    complexd* mod;    
 } likelihood_params;
 
 

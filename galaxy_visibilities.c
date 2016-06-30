@@ -34,13 +34,61 @@
 extern "C" {
 #endif
     
-// Compute model galaxy visibilities analitically (imaginary part is equal to 0!)
-void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double e1, double e2,
-                               double scalelength, double flux, unsigned long int num_coords,
-                               double* uu_metres, double* vv_metres, unsigned long int* count, double* Modvis)
+// Compute flux independent model galaxy visibilities analitically
+// model agalaxy at the phase centre: visibilities are real numbers (smearing? as data vis are shifted at zero...)
+void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, double* wavenumbers,
+                        double e1, double e2, double scalelength, unsigned long int num_coords,
+                        double* uu_metres, double* vv_metres, unsigned long int* count, complexd* Modvis)
 {
-   // double u,v;
-    double res_arc,wavenumber,den,uu,vv,k1,k2,spectra;
+    double wavenumber,den,uu,vv,k1,k2,spectra,shape,phase;
+    double detA = 1.-e1*e1-e2*e2;
+    double scale = scalelength*ARCS2RAD;
+    double scale_factor = (scale*scale)/(detA*detA);
+    
+    double sum = 0.;
+    unsigned long int nv = 0;
+    
+    for (unsigned int ch=0; ch<nchannels; ch++)
+    {
+        spectra = spec[ch];
+        wavenumber = wavenumbers[ch];
+        
+        for (unsigned long int i = 0; i < num_coords; ++i)
+        {
+            uu = uu_metres[i];
+            vv = vv_metres[i];
+            
+            k1 = (1.+e1)*uu + e2*vv;
+            k2 = e2*uu + (1.-e1)*vv;
+            
+            den = 1. + scale_factor*wavenumber*wavenumber*(k1*k1+k2*k2);
+            shape = spectra/(den*sqrt(den));
+            Modvis[nv].real = shape;
+            Modvis[nv].imag = 0.;
+            
+#ifdef GRID
+            sum += Modvis[nv].real*Modvis[nv].real*count[i];
+#else
+            sum += Modvis[nv].real*Modvis[nv].real;
+#endif
+            nv++;
+        }
+    }
+    
+    // normalise
+    sum = sqrt(sum);
+    unsigned long int nvis = num_coords*nchannels;
+    for (unsigned long int k=0; k<nvis; k++) Modvis[k].real /= sum;
+}
+    
+    
+// model galaxy at the galaxy position
+void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
+                               double acc_time, double e1, double e2, double scalelength, double l,
+                               double m, unsigned long int num_coords, double* uu_metres, double* vv_metres,
+                               unsigned long int* count, complexd* Modvis)
+{
+    double wavenumber,den,uu,vv,k1,k2,spectra,shape,phase,smear;
     double detA = 1.-e1*e1-e2*e2;
     double scale = scalelength*ARCS2RAD;
     double scale_factor = (scale*scale)/(detA*detA);
@@ -57,35 +105,47 @@ void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wav
         {
           uu = uu_metres[i];
           vv = vv_metres[i];
+            
+          phase = uu*l+vv*m;
+          /*if (phase != 0.)
+          {
+             smear = band_factor*phase;
+             smear = sin(smear)/smear;
+          }
+          else smear = 1.;
+          */
+          phase = -wavenumber*phase;
  
           k1 = (1.+e1)*uu + e2*vv;
           k2 = e2*uu + (1.-e1)*vv;
         
           den = 1. + scale_factor*wavenumber*wavenumber*(k1*k1+k2*k2);
-          Modvis[nv] = spectra*flux/(den*sqrt(den));
+          shape = spectra/(den*sqrt(den));
+          Modvis[nv].real = shape*cos(phase); //*smear;
+          Modvis[nv].imag = shape*sin(phase); //*smear;
  
 #ifdef GRID
-          sum += (Modvis[nv]*Modvis[nv])*count[i];
+          sum += (Modvis[nv].real*Modvis[nv].real + Modvis[nv].imag*Modvis[nv].imag)*count[i];
 #else
-          sum += (Modvis[nv]*Modvis[nv]);
+          sum += (Modvis[nv].real*Modvis[nv].real + Modvis[nv].imag*Modvis[nv].imag);
 #endif
-           nv++;
+          nv++;
         }
     }
     
     // normalise
     sum = sqrt(sum);
     unsigned long int nvis = num_coords*nchannels;
-    for (unsigned long int k=0; k<nvis; k++) Modvis[k] /= sum;
+    for (unsigned long int k=0; k<nvis; k++) { Modvis[k].real /= sum; Modvis[k].imag /= sum; }
 }
     
     
-// Compute data galaxy visibilities per channel with no smearing effects as the galaxy is at the phase centre
-void data_galaxy_visibilities(double spectra, double wavenumber, double e1, double e2, double scalelength,
-                              double flux, unsigned long int num_coords, double* uu_metres, double* vv_metres,
-                              complexd* vis)
+// Compute data galaxy visibilities per channel  
+void data_galaxy_visibilities(double spectra, double wavenumber, double band_factor, double acc_time,
+                              double e1, double e2, double scalelength, double flux, double l, double m,
+                              unsigned long int num_coords, double* uu_metres, double* vv_metres, complexd* vis)
 {
-        double den,u,v,k1,k2;
+        double den,u,v,k1,k2,phase,shape;
         double detA = 1.-e1*e1-e2*e2;
         double scale = scalelength*ARCS2RAD;  // scale in rad
         double scale_factor = (scale*scale)/(detA*detA);
@@ -94,13 +154,24 @@ void data_galaxy_visibilities(double spectra, double wavenumber, double e1, doub
         {
             u = uu_metres[i];
             v = vv_metres[i];
-                
+            
+            phase = u*l+v*m;
+            /*if (phase !=0.)
+            {
+               smear = band_factor*phase;
+               smear = sin(smear)/smear;
+            }
+            else smear = 1.;
+            */
+            phase = -wavenumber*phase;
+            
             k1 = (1.+e1)*u + e2*v;
             k2 = e2*u + (1.-e1)*v;
                 
             den = 1. + scale_factor*wavenumber*wavenumber*(k1*k1+k2*k2);
-            vis[i].real = spectra*flux/(den*sqrt(den));
-            vis[i].imag = 0.0;
+            shape = spectra*flux/(den*sqrt(den));
+            vis[i].real = shape*cos(phase); //*smear;
+            vis[i].imag = shape*sin(phase); //*smear;
         }
         
 }
@@ -131,6 +202,27 @@ void add_system_noise(gsl_rng * gen, unsigned int num_baselines, unsigned int nu
     
 }
     
+
+// Shift data visibilities phase to the galaxy position
+void data_visibilities_phase_shift(double wavenumber, double l, double m, unsigned long int num_coords,
+                                   double* uu_metres, double* vv_metres, complexd* vis)
+{
+    double u,v,phase;
+    
+    for (unsigned long int i = 0; i < num_coords; ++i)
+    {
+        u = uu_metres[i];
+        v = vv_metres[i];
+        
+        phase = u*l+v*m;
+        phase *= wavenumber;
+ 
+        vis[i].real *= cos(phase);
+        vis[i].imag *= sin(phase);
+    }
+
+}
+ 
     
 #ifdef __cplusplus
 }

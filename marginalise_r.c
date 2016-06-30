@@ -199,15 +199,16 @@ double marginalise_posterior_r(int num_marvals, double *xmarvals, double *ymarva
     // integrate the exponential of the interpolated log(posterior) array
     gsl_status = gsl_integration_qag(&marF, xmin, xmax,0., 1.e-3, gsl_work_size,
                                      GSL_INTEG_GAUSS41,gsl_work, &sump, &error);
-    if (gsl_status)
-        // return a null value, no marginalised values will be computed at this point
-        sump = 0.;
   }
     
   // free the gsl objects
   gsl_spline_free(fspline);
   gsl_interp_accel_free(facc);
   gsl_integration_workspace_free(gsl_work);
+    
+  if (gsl_status)
+      // return a null value, no marginalised values will be computed at this point
+      return -1.e10;
 
   return log(sump)+ymax;   // return log(L), trick to deal with a very large values of the likelihood
 }

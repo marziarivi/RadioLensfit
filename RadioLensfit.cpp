@@ -114,6 +114,8 @@ int main(int argc, char *argv[])
     }
     
     double sizeGbytes, totGbytes = 0.;
+    double fov = 3600*ARCS2RAD; //1.22*C0/(freq_start_hz*diameter);  // 1 degree field of view in RAD
+    printf("field of view: %e [rad] %f [arcsec] \n",fov,fov/(ARCS2RAD));
     
     // Allocate and read uv coordinates ------------------------------------------------------------------------------
     // coordinates in the file are ordered as nbaselines x ntimes
@@ -221,7 +223,7 @@ int main(int argc, char *argv[])
     
     // Allocate Model Visibilities ------------------------------------------------------------------------------------------
     int num_models = numR-1;
-    double* visMod;
+    complexd* visMod;
     try
     {
 #if defined GRID
@@ -229,8 +231,8 @@ int main(int argc, char *argv[])
 #else
         unsigned long int model_ncoords = num_coords;
 #endif
-        visMod = new double[num_models*model_ncoords*num_channels];     // model imaginary part is 0
-        sizeGbytes = num_models*model_ncoords*num_channels*sizeof(double)/((double)(1024*1024*1024));
+        visMod = new complexd[num_models*model_ncoords*num_channels];
+        sizeGbytes = num_models*model_ncoords*num_channels*sizeof(complexd)/((double)(1024*1024*1024));
         cout << "rank " << rank << ": allocated models: num_models= " << num_models << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
@@ -309,6 +311,8 @@ int main(int argc, char *argv[])
     par.count = 0;
 #endif
     par.nchannels = num_channels;
+    par.band_factor = channel_bandwidth_hz*PI/C0;
+    par.acc_time = time_acc;
     par.spec = spec;
     par.wavenumbers = wavenumbers; // wavenumbers for the model
     par.mod = visMod;
@@ -320,11 +324,11 @@ int main(int argc, char *argv[])
     char filename[100];
     sprintf(filename,"ellipticities%d.txt",rank);
     pFile = fopen(filename,"w");
-    fprintf(pFile, "flux | scale | e1 | m_e1 | err1 | e2 | m_e2 | err2 | 1D var | SNR \n");
+    fprintf(pFile, "flux | scale | e1 | m_e1 | err1 | e2 | m_e2 | err2 | 1D var | SNR |   l  |  m  | \n");
 
     int bad = 0;
     int gal = 0;
-    int np_max = 30;  // min number of likelihood sampling points
+    int np_max = 30;  // min number of sampling points with likelihood above 5%ML
     
     gsl_multimin_function minex_post;
     minex_post.n = 3;
@@ -338,11 +342,12 @@ int main(int argc, char *argv[])
     
     // use Simplex algorithm of Nelder and Mead provided by the GLS library to minimize -log(likelihood)
     const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
-    gsl_multimin_fminimizer *p = 0;
+/*  gsl_multimin_fminimizer *p = 0;
     gsl_vector *sy, *y;
     y = gsl_vector_alloc (3);
     sy = gsl_vector_alloc (3);
     p = gsl_multimin_fminimizer_alloc (T, 3);
+    */
     
     gsl_multimin_fminimizer *s = 0;
     gsl_vector *sx, *x;
@@ -360,12 +365,22 @@ int main(int argc, char *argv[])
     clock_t start_data,end_data,start_fitting,end_fitting;
 #endif
     
-    double flux,scalelength,ee1,ee2,den,SNR_vis;
+    double l0,m0,flux,scalelength,ee1,ee2,den,SNR_vis;
+    double radius,orient;
     complexd z1,z2;
     
     for (unsigned long int g=0; g<my_gal; g++)
     {
         // Data simulation --------------------------------------------------------------------------------------------------------------------------
+        // positions in RAD
+        radius = gsl_rng_uniform(gen)*0.5*fov;
+        orient = gsl_rng_uniform(gen)*2*PI;
+        
+        l0 = radius*cos(orient);
+        m0 = radius*sin(orient);
+        
+        par.l0 = l0;
+        par.m0 = m0;
         
         // flux and scalelength are the same for all galaxies within the ellipticity circle
         flux = gflux[g];
@@ -404,10 +419,12 @@ int main(int argc, char *argv[])
           {
              //double freq_start = freq_start_hz+ch*channel_bandwidth_hz;
              unsigned long int ch_vis = ch*num_coords;
-             data_galaxy_visibilities(spec[ch], wavenumbers[ch], ee1, ee2, scalelength, flux, num_coords, uu_metres, vv_metres,&(visData[ch_vis]));
+             data_galaxy_visibilities(spec[ch], wavenumbers[ch], par.band_factor, time_acc, ee1, ee2, scalelength,
+                                      flux, l0, m0, num_coords, uu_metres, vv_metres, &(visData[ch_vis]));
  
              double SNR_ch = 0.;
-             for (unsigned long int vs = ch_vis; vs < ch_vis+num_coords; vs++) SNR_ch += visData[vs].real*visData[vs].real;
+             for (unsigned long int vs = ch_vis; vs < ch_vis+num_coords; vs++)
+                   SNR_ch += visData[vs].real*visData[vs].real+visData[vs].imag*visData[vs].imag;
              SNR_ch /= par.sigma;
            
              // Add a random Gaussian noise component to the visibilities.
@@ -419,6 +436,9 @@ int main(int argc, char *argv[])
                add_system_noise(gen, num_baselines, num_times, &(visData[ch_vis]), sigmab);
              }
 #ifdef GRID
+             // Phase shift data visibilities (to be done after gridding because real data will be gridded)
+             data_visibilities_phase_shift(wavenumbers[ch], l0, m0, num_coords, uu_metres, vv_metres, &(visData[ch_vis]));
+              
              // gridding visibilities ----------------------------------------------------------------------------------------------------------------
              unsigned int ch_visgrid = ch*grid_ncoords;
              gridding_visibilities(num_coords,uu_metres,vv_metres,&(visData[ch_vis]),len,grid_size,&(grid_visData[ch_visgrid]),count);
@@ -441,7 +461,7 @@ int main(int argc, char *argv[])
           int iter = 0;
           int status;
           double size;
-            
+  /*
           // Starting point
           gsl_vector_set (y, 0, 0.01);
           gsl_vector_set (y, 1, 0.01);
@@ -465,9 +485,9 @@ int main(int argc, char *argv[])
                 
           }
           while (status == GSL_CONTINUE && iter < 50 && p->fval < 0.);
-       
-          double start_e1 = gsl_vector_get(p->x, 0);
-          double start_e2 = gsl_vector_get(p->x, 1);
+  */
+          double start_e1 = 0.; //gsl_vector_get(p->x, 0);
+          double start_e2 = 0.; //gsl_vector_get(p->x, 1);
         
           // Search for the maximum likelihood
           gsl_vector_set (x, 0, start_e1);
@@ -493,13 +513,13 @@ int main(int argc, char *argv[])
            mes_e1 = gsl_vector_get(s->x, 0);
            mes_e2 = gsl_vector_get(s->x, 1);
            maxL= -s->fval;
-           cout << "rank:" << rank << " n. " << gal << " flux = " << flux << " scalelength = " << scalelength << ": Maximum log likelihood = " << maxL << " n.iter = " << iter << " for e = " << mes_e1 << "," << mes_e2 <<  "  original e = " << ee1 << "," << ee2 << endl;
+           cout << "rank:" << rank << " n. " << gal << " flux = " << flux << " scalelength = " << scalelength << " position [arcsec] (" << l0/(ARCS2RAD) << "," << m0/(ARCS2RAD) << "): Maximum log likelihood = " << maxL << " n.iter = " << iter << " for e = " << mes_e1 << "," << mes_e2 <<  "  original e = " << ee1 << "," << ee2 << endl;
             
            // Likelihood sampling to compute mean and variance
            double var_e1, var_e2, cov_e;
            int error = likelihood_sampling(rank,&mes_e1, &mes_e2, maxL, &par, np_max, &var_e1, &var_e2, &cov_e);
            double oneDimvar = sqrt(var_e1*var_e2-cov_e*cov_e);
-           fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",flux,scalelength,ee1,mes_e1,sqrt(var_e1), ee2,mes_e2,sqrt(var_e2),oneDimvar,sqrt(SNR_vis));
+           fprintf(pFile, "%f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f | %f \n",flux,scalelength,ee1,mes_e1,sqrt(var_e1), ee2,mes_e2,sqrt(var_e2),oneDimvar,sqrt(SNR_vis),l0/(ARCS2RAD),m0/(ARCS2RAD));
            if (error)
            {
               cout << "ERROR likelihood sampling!" << endl;
@@ -515,15 +535,17 @@ int main(int argc, char *argv[])
        }
     }
 
+    /*
     gsl_vector_free(y);
     gsl_vector_free(sy);
     gsl_multimin_fminimizer_free(p);
+    */
     
     gsl_vector_free(x);
     gsl_vector_free(sx);
     gsl_multimin_fminimizer_free(s);
     
-    gsl_rng_free (gen);
+    gsl_rng_free(gen);
  
 #ifdef USE_MPI
     double end_tot = MPI_Wtime();
