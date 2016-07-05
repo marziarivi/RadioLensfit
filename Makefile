@@ -9,14 +9,18 @@
 #OPT += -DUSE_MPI
 
  OPT += -DGRID    #gridding visibilities
-
+ OPT += -DFACETING  #fitting by faceting
 #------------------------------------------------------------------------- 
 
 SUP_INCL = -I. 
 LIB_OPT = 
 OPTIMIZE = -O3 -g 
 
-ifeq (MPI,$(findstring MPI,$(OPT)))
+ifeq (FACETING,$(findstring FACETING,$(OPT)))
+ OPT += -DGRID
+endif
+
+ifeq (USE_MPI,$(findstring USE_MPI,$(OPT)))
   CC  =  mpiCC -g 
 else
   CC  = g++
