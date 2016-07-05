@@ -26,7 +26,7 @@ extern "C" {
     
 #include "datatype.h"
     
-unsigned long int evaluate_uv_grid(double len, unsigned long int ncoords, double* u, double* v, int sizeg, double* grid_u, double* grid_v, unsigned long int* count);
+unsigned long int evaluate_uv_grid(double len, unsigned long int ncoords, double* u, double* v, int sizeg, double** grid_u, double** grid_v, unsigned long int* count);
     
 void gridding_visibilities(unsigned long int ncoords, double *u, double *v, complexd *vis, double len, int sizeg, complexd *new_vis, unsigned long int* count);
 

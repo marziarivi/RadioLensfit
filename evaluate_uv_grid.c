@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "evaluate_uv_grid.h"
 
 #ifdef __cplusplus
@@ -30,27 +31,17 @@ extern "C" {
 #endif
 
 // Compute grid of u,v coordinates (coordinates are put in the center of the cell).
-unsigned long int evaluate_uv_grid(double len, unsigned long int ncoords, double* u, double* v, int sizeg, double* grid_u, double* grid_v, unsigned long int* count)
+unsigned long int evaluate_uv_grid(double len, unsigned long int ncoords, double* u, double* v, int sizeg, double** grid_u, double** grid_v, unsigned long int* count)
 {
     unsigned int i,j;
-    unsigned long int p,c;
+    unsigned long int p,n;
     unsigned long int size = sizeg*sizeg;
+    memset(count, 0, size*sizeof(*count));
     
-    double* temp_grid_u = (double *) malloc(size*sizeof(double));
-    double* temp_grid_v = (double *) malloc(size*sizeof(double));
+    double* temp_grid = (double *) malloc(sizeg*sizeof(double));
     
     double inc = 2*len/sizeg;
-    p = 0;
-    for (j = 0; j < sizeg; ++j)
-    {
-        for (i = 0; i < sizeg; ++i)
-        {
-          temp_grid_u[p] = (i+0.5)*inc - len;
-          temp_grid_v[p] = (j+0.5)*inc - len;
-          count[p] = 0;
-          p++;
-        }
-    }
+    for (i = 0; i < sizeg; ++i) temp_grid[i] = (i+0.5)*inc - len;
 
 #ifdef _OPENMP
 #pragma omp parallel for
@@ -66,23 +57,29 @@ unsigned long int evaluate_uv_grid(double len, unsigned long int ncoords, double
         count[pc]++;
     }
  
-    c=0;
+    n = 0;
+    for (p = 0; p < size; p++)  if (count[p]) n++;
+    
+    *grid_u = new double[n];
+    *grid_v = new double[n];
+    
+    n=0;
     for (p = 0; p < size; p++)
     {
         if (count[p])
         {
-            grid_u[c] = temp_grid_u[p];
-            grid_v[c] = temp_grid_v[p];
-            count[c] = count[p];
-            c++;
+            j = p/sizeg;
+            i = p%sizeg;
+            (*grid_u)[n] = temp_grid[i];
+            (*grid_v)[n] = temp_grid[j];
+            count[n] = count[p];
+            n++;
         }
     }
  
-    free(temp_grid_u);
-    free(temp_grid_v);
- 
+    free(temp_grid);
     
-    return c;
+    return n;
 }
 
     

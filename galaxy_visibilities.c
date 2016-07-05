@@ -35,10 +35,10 @@ extern "C" {
 #endif
     
 // Compute flux independent model galaxy visibilities analitically
-// model agalaxy at the phase centre: visibilities are real numbers (smearing? as data vis are shifted at zero...)
+// model a galaxy at the phase centre: visibilities are real numbers (smearing? as data vis are shifted at zero...)
 void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, double* wavenumbers,
                         double e1, double e2, double scalelength, unsigned long int num_coords,
-                        double* uu_metres, double* vv_metres, unsigned long int* count, complexd* Modvis)
+                        double* uu_metres, double* vv_metres, unsigned long int* count, double* Modvis)
 {
     double wavenumber,den,uu,vv,k1,k2,spectra,shape,phase;
     double detA = 1.-e1*e1-e2*e2;
@@ -63,13 +63,12 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
             
             den = 1. + scale_factor*wavenumber*wavenumber*(k1*k1+k2*k2);
             shape = spectra/(den*sqrt(den));
-            Modvis[nv].real = shape;
-            Modvis[nv].imag = 0.;
+            Modvis[nv] = shape;
             
 #ifdef GRID
-            sum += Modvis[nv].real*Modvis[nv].real*count[i];
+            sum += Modvis[nv]*Modvis[nv]*count[i];
 #else
-            sum += Modvis[nv].real*Modvis[nv].real;
+            sum += Modvis[nv]*Modvis[nv];
 #endif
             nv++;
         }
@@ -78,7 +77,7 @@ void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, dou
     // normalise
     sum = sqrt(sum);
     unsigned long int nvis = num_coords*nchannels;
-    for (unsigned long int k=0; k<nvis; k++) Modvis[k].real /= sum;
+    for (unsigned long int k=0; k<nvis; k++) Modvis[k] /= sum;
 }
     
     

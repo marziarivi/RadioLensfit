@@ -145,15 +145,24 @@ double loglikelihood(void *params, double ee1, double ee2, int *error)
  *  Likelihood computation as function of ellipticity and scalelength (marginalise over position)
  */
     
+#ifdef FACETING
+double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
+                       double* wavenumbers, double ee1, double ee2, double l, double m, double scale,
+                       unsigned long int n_uv_coords, unsigned long int* count, const double variance,
+                       double* uu_metres, double* vv_metres, complexd* visData, double* visM)
+#else
 double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_time, double* spec,
                        double* wavenumbers, double ee1, double ee2, double l, double m, double scale,
                        unsigned long int n_uv_coords, unsigned long int* count, const double variance,
                        double* uu_metres, double* vv_metres, complexd* visData, complexd* visM)
+#endif
 {
     // generate model
-    //model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, n_uv_coords, uu_metres, vv_metres, count, visM);
-    // generate model at the phase centre
+#ifdef FACETING
     model_galaxy_visibilities_at_zero(nchannels, spec, wavenumbers, ee1, ee2, scale, n_uv_coords, uu_metres, vv_metres, count, visM);
+#else
+    model_galaxy_visibilities(nchannels, spec, wavenumbers, band_factor, acc_time, ee1, ee2, scale, l,m, n_uv_coords, uu_metres, vv_metres, count, visM);
+#endif
         
     // Compute log(likelihood) dependend only on ellipticity and scale-length
     double L_er,ho, det_sigma;
@@ -175,9 +184,15 @@ double loglikelihood_r(unsigned int nchannels, double band_factor, double acc_ti
  *  the cross-correlation is approximated as a 2D gaussian
  *  centered in its maximum ho = h(xo,yo) and det(covariance matrix) = 1/det(Hessian(xo,yo)).
  */
+#ifdef FACETING
+void cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
+                           unsigned long int* count, double* uu_metres, double* vv_metres, complexd* visData,
+                           double* visMod, double* ho, double* det_sigma)
+#else
 void cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned long int n_uv_coords,
                        unsigned long int* count, double* uu_metres, double* vv_metres, complexd* visData,
                        complexd* visMod, double* ho, double* det_sigma)
+#endif
 {
     double a, real_part, imag_part, res_arc, wavenumber, u,v;
     double det, d2h_dx2_xo, d2h_dy2_yo, dh_dx_xo, dh_dy_yo, d2h_dxdy_o;
@@ -192,8 +207,13 @@ void cross_correlation(unsigned int nchannels, double* wavenumbers, unsigned lon
         wavenumber = wavenumbers[ch];
         for (i=0; i < n_uv_coords; i++)
         {
+#ifdef FACETING
+            h_F[k].real = visData[k].real*visMod[k];
+            h_F[k].imag = - visData[k].imag*visMod[k];
+#else
             h_F[k].real = (visData[k].real*visMod[k].real + visData[k].imag*visMod[k].imag);
             h_F[k].imag = (visData[k].real*visMod[k].imag - visData[k].imag*visMod[k].real);
+#endif
 #ifdef GRID
             h_F[k].real *= count[i];
             h_F[k].imag *= count[i];

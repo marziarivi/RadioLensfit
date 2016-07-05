@@ -31,7 +31,7 @@ extern "C" {
 // model agalaxy at the phase centre: visibilities are real numbers
 void model_galaxy_visibilities_at_zero(unsigned int nchannels, double* spec, double* wavenumbers,
                                 double e1, double e2, double scalelength, unsigned long int num_coords,
-                                double* uu_metres, double* vv_metres, unsigned long int* count, complexd* Modvis);
+                                double* uu_metres, double* vv_metres, unsigned long int* count, double* Modvis);
 
 void model_galaxy_visibilities(unsigned int nchannels, double* spec, double* wavenumbers, double band_factor,
                                double acc_time, double e1, double e2, double scalelength, double l,

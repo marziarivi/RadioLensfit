@@ -170,16 +170,21 @@ int main(int argc, char *argv[])
     
 #ifdef GRID
     // Gridding uv coordinates ----------------------------------------------------------------------------------------
-    int grid_size = 800;
+#ifdef FACETING
+    int grid_size = 900;
+#else
+    int grid_size = 18000;
+#endif
+    double* grid_u;
+    double* grid_v;
     unsigned long int ncells = grid_size*grid_size;
-    double* grid_u = new double[ncells];
-    double* grid_v = new double[ncells];
     unsigned long int* count = new unsigned long int[ncells];
-    sizeGbytes = (2*ncells*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
+    
+    unsigned long int grid_ncoords = evaluate_uv_grid(len, num_coords, uu_metres, vv_metres, grid_size, &grid_u, &grid_v, count);
+    sizeGbytes = (2*grid_ncoords*sizeof(double)+ncells*sizeof(unsigned long int))/((double)(1024*1024*1024));
     cout << "rank " << rank << ": allocated grid coordinates and array counter: " << sizeGbytes  << " GB" << endl;
     totGbytes += sizeGbytes;
     
-    unsigned long int grid_ncoords = evaluate_uv_grid(len, num_coords, uu_metres, vv_metres, grid_size, grid_u, grid_v, count);
     unsigned long int grid_nvis = num_channels*grid_ncoords;
     complexd* grid_visData;
     try
@@ -223,7 +228,11 @@ int main(int argc, char *argv[])
     
     // Allocate Model Visibilities ------------------------------------------------------------------------------------------
     int num_models = numR-1;
+#ifdef FACETING
+    double* visMod;
+#else
     complexd* visMod;
+#endif
     try
     {
 #if defined GRID
@@ -231,8 +240,13 @@ int main(int argc, char *argv[])
 #else
         unsigned long int model_ncoords = num_coords;
 #endif
+#ifdef FACETING
+        visMod = new double[num_models*model_ncoords*num_channels];
+        sizeGbytes = num_models*model_ncoords*num_channels*sizeof(double)/((double)(1024*1024*1024));
+#else
         visMod = new complexd[num_models*model_ncoords*num_channels];
         sizeGbytes = num_models*model_ncoords*num_channels*sizeof(complexd)/((double)(1024*1024*1024));
+#endif
         cout << "rank " << rank << ": allocated models: num_models= " << num_models << ", size = " << sizeGbytes  << " GB" << endl;
         totGbytes += sizeGbytes;
     }
@@ -436,9 +450,10 @@ int main(int argc, char *argv[])
                add_system_noise(gen, num_baselines, num_times, &(visData[ch_vis]), sigmab);
              }
 #ifdef GRID
+#ifdef FACETING
              // Phase shift data visibilities (to be done after gridding because real data will be gridded)
-             data_visibilities_phase_shift(wavenumbers[ch], l0, m0, num_coords, uu_metres, vv_metres, &(visData[ch_vis]));
-              
+             data_visibilities_phase_shift(wavenumbers[ch], -l0, -m0, num_coords, uu_metres, vv_metres, &(visData[ch_vis]));
+#endif
              // gridding visibilities ----------------------------------------------------------------------------------------------------------------
              unsigned int ch_visgrid = ch*grid_ncoords;
              gridding_visibilities(num_coords,uu_metres,vv_metres,&(visData[ch_vis]),len,grid_size,&(grid_visData[ch_visgrid]),count);
