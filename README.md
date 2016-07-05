@@ -4,7 +4,8 @@ Visibilities simulation and shape model fitting of radio galaxies.
 
 This is a MPI+OpenMP code for simulating visibilities of one observed galaxy by using SKA1-MID configuration, and measuring the galaxy shape in the visibility domain adopting  a Bayesian model fitting approach. It uses an exponential Sersic model and works in the visibility domain avoiding Fourier Transform.
 
-version 1.0 - galaxies at the phase centre, uniform gridding
+version 1.0 - single galaxy at the phase centre 
+version 1.1 - single galaxy in the field of view, normal gridding
 
 ## Installation
 
@@ -24,6 +25,7 @@ The radio telescope configuration is set at the beginning of the main() function
 
 - nge*10 galaxies will be simulated with flux larger than \<flux-cut\> [in muJy]
 - g=(shear1,shear2) is the shear to apply to the ellipticity of each galaxy
+- Coordinate files are assumed to be txt containing one coordinate per line.
 
 The code produces a file, called "ellipticities\<n\>.txt", for each MPI task (n=0,1,...N) where each row contains the following galaxy data:
 >
@@ -37,4 +39,6 @@ The code produces a file, called "ellipticities\<n\>.txt", for each MPI task (n=
 - err2 (e2 measure error)
 - 1D likelihood variance
 - SNR
+- l (source coordinates with respect to the phase centre) 
+- m
 
