@@ -62,7 +62,11 @@ typedef struct{
     double l0;
     double m0;
     complexd* data;
-    complexd* mod;    
+#ifdef FACETING
+    double* mod;
+#else
+    complexd* mod;
+#endif
 } likelihood_params;
 
 
