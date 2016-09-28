@@ -43,5 +43,6 @@ The code produces a file, called "ellipticities\<n\>.txt", for each MPI task (n=
 - m
 
 ## Citing Radiolensfit
-If you use RadioLensfit and find it useful, please consider citing the related paper: 
+If you use RadioLensfit and find it useful, please consider citing the related paper:
+
 Rivi M., Miller L., Makhathini S., Abdalla F. B., 2016, MNRAS, 463, 1881
