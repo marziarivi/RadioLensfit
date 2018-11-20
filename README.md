@@ -2,11 +2,11 @@
 
 **Visibilities simulation and shape model fitting of radio star-forming galaxies for Radio Weak Lensing**
 
-This is a tool for simulating visibilities of observed SF galaxies by using SKA1-MID configuration, and measuring galaxy ellipticities in the visibility domain adopting  a Bayesian model fitting approach. It uses an exponential Sersic model and works in the visibility domain avoiding Fourier Transform.
+This is a tool for simulating visibilities of observed SF galaxies by using SKA1-MID configuration, and measuring galaxy ellipticities in the visibility domain adopting  a Bayesian model fitting approach. It uses an exponential Sersic model and works in the visibility domain avoiding Fourier Transform. 
 
-_v1.0_ - single galaxy at the phase centre (MPI+OpenMP parallelization) 
+v1.0 - single galaxy at the phase centre (MPI+OpenMP parallelization) 
 
-_v2.0_ - many galaxies in the field of view: source extraction + fitting of a single galaxy at a time (only OpenMP parallelization)
+v2.0 - many galaxies in the field of view: source extraction + fitting of a single galaxy at a time (only OpenMP parallelization)
 
 ## Installation
 
@@ -20,7 +20,7 @@ GSL library is required.
 2) Make.
 
 ## Usage
-The radio telescope configuration is set at the beginning of the main() function for SKA1-MID with 12 frequency channels and 60s accumulation time.
+The radio telescope configuration is set at the beginning of the main() function for SKA1-MID.
 
 <code> RadioLensfit.x \<filename u-coord\> \<filename v-coord\> \<nge\> \<shear1\> \<shear2\> \<flux-cut\> </code>
 
@@ -45,8 +45,8 @@ The code produces a file, called "ellipticities\<n\>.txt", for each MPI task (n=
 
 ## Citing Radiolensfit
 If you use RadioLensfit and find it useful, please consider citing the related paper: 
-"Radio Weak Lensing Shear Measurement in the Visibility Domain"
+_Radio Weak Lensing Shear Measurement in the Visibility Domain_
 
-Part  I. Rivi M., Miller L., Makhathini S., Abdalla F. B., 2016, MNRAS, 463, 1881 - [arXiv:1603.04784](https://arxiv.org/abs/1603.04784)
+_Part  I._ Rivi M., Miller L., Makhathini S., Abdalla F. B., 2016, MNRAS, 463, 1881 - [arXiv:1603.04784](https://arxiv.org/abs/1603.04784)
 
-Part II. Rivi M., Miller L., 2018, MNRAS, 476, 2053 - [arXiv:1709.01827](https://arxiv.org/abs/1709.01827)
+_Part II._ Rivi M., Miller L., 2018, MNRAS, 476, 2053 - [arXiv:1709.01827](https://arxiv.org/abs/1709.01827)
