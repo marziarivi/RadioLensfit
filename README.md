@@ -8,7 +8,7 @@ v1.0 - single galaxy at the phase centre (MPI+OpenMP parallelization)
 
 v2.0 - many galaxies in the field of view: source extraction + fitting of a single galaxy at a time (only OpenMP parallelization)
 
-## Installation
+**Installation**
 
 GSL library is required.
 
@@ -19,31 +19,9 @@ GSL library is required.
 
 2) Make.
 
-## Usage
-The radio telescope configuration is set at the beginning of the main() function for SKA1-MID.
+[Usage](https://github.com/marziarivi/RadioLensfit/wiki)
 
-<code> RadioLensfit.x \<filename u-coord\> \<filename v-coord\> \<nge\> \<shear1\> \<shear2\> \<flux-cut\> </code>
-
-- nge*10 galaxies will be simulated with flux larger than \<flux-cut\> [in muJy]
-- g=(shear1,shear2) is the shear to apply to the ellipticity of each galaxy
-- Coordinate files are assumed to be txt containing one coordinate per line.
-
-The code produces a file, called "ellipticities\<n\>.txt", for each MPI task (n=0,1,...N) where each row contains the following galaxy data:
->
-- flux [muJy]
-- scalelength [arcsec]
-- e1 (original)
-- m_e1 (measured) 
-- err1 (e1 measure error) 
-- e2 (original) 
-- m_e2 (measured)
-- err2 (e2 measure error)
-- 1D likelihood variance
-- SNR
-- l (source coordinates with respect to the phase centre) 
-- m
-
-## Citing Radiolensfit
+## Citing RadioLensfit
 If you use RadioLensfit and find it useful, please consider citing the related paper: 
 _Radio Weak Lensing Shear Measurement in the Visibility Domain_
 
