@@ -8,7 +8,7 @@ v1.0 - single galaxy at the phase centre (MPI+OpenMP parallelization)
 
 v1.1 - single galaxy in the field of view, natural gridding
 
-**Installation**
+# Installation
 
 GSL library is required.
 
@@ -19,7 +19,8 @@ GSL library is required.
 
 2) Make.
 
-**Usage**
+# Usage
+
 The radio telescope configuration is set at the beginning of the main() function for SKA1-MID. The source catalog is generated according to the galaxy parameters distributions.
 
 <code> RadioLensfit.x \<filename u-coord\> \<filename v-coord\> \<nge\> \<shear1\> \<shear2\> \<flux-cut\> </code>
