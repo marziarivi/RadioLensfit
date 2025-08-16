@@ -8,6 +8,8 @@ v1.0 - single galaxy at the phase centre (MPI+OpenMP parallelization)
 
 v1.1 - single galaxy in the field of view, natural gridding
 
+new version: https://github.com/marziarivi/RadioLensfit2
+
 # Installation
 
 GSL library is required.
